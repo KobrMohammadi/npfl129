@@ -9,7 +9,7 @@ import sklearn.model_selection
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
 parser.add_argument("--data_size", default=40, type=int, help="Data size")
-parser.add_argument("--plot", default=False, const=True, nargs="?", type=str, help="Plot the predictions")
+parser.add_argument("--plot", default=True, const=True, nargs="?", type=str, help="Plot the predictions")
 parser.add_argument("--range", default=3, type=int, help="Feature order range")
 parser.add_argument("--recodex", default=False, action="store_true", help="Running in ReCodEx")
 parser.add_argument("--seed", default=42, type=int, help="Random seed")
@@ -30,17 +30,22 @@ def main(args: argparse.Namespace) -> list[float]:
         # TODO: Split the data into a train set and a test set.
         # Use `sklearn.model_selection.train_test_split` method call, passing
         # arguments `test_size=args.test_size, random_state=args.seed`.
+        train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(features, ys, test_size=args.test_size, random_state=args.seed
+        
 
         # TODO: Fit a linear regression model using `sklearn.linear_model.LinearRegression`;
         # consult the documentation and see especially the `fit` method.
-        model = ...
+        model = sklearn.linear_model.LinearRegression()
+        model.fit(train.data , train.target)
 
         # TODO: Predict targets on the test set using the `predict` method of the trained model.
+        predictions = model.predict(test_data)
+
 
         # TODO: Compute root mean square error on the test set predictions.
         # You can either do it manually or look at `sklearn.metrics.mean_squared_error` method
         # and its `squared` parameter.
-        rmse = ...
+        rmse =sklearn.metrics.mean_squared_error(test_target, predictions, squared=False)
 
         rmses.append(rmse)
 
