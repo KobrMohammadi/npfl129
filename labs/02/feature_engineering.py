@@ -23,6 +23,8 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(dataset.data, dataset.target, test_size=args.test_size, random_state=args.seed)
+
 
     # TODO: Process the input columns in the following way:
     #
@@ -40,7 +42,10 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
     # In the output, first there should be all the one-hot categorical features,
     # and then the real-valued features. To process different dataset columns
     # differently, you can use `sklearn.compose.ColumnTransformer`.
-
+    categorical = np.array([np.issubdtype(dataset.data[:, i].dtype, np.integer) for i in range(dataset.data.shape[1])])
+    preprocessor = sklearn.compose.ColumnTransformer(transformers=[ ('cat', sklearn.preprocessing.OneHotEncoder(sparse=False, handle_unknown="ignore"), np.where(categorical)[0]), ('num', sklearn.preprocessing.StandardScaler(), np.where(~categorical)[0])])
+    poly = sklearn.preprocessing.PolynomialFeatures(2, include_bias=False)
+    
     # TODO: To the current features, append polynomial features of order 2.
     # If the input values are `[a, b, c, d]`, you should append
     # `[a^2, ab, ac, ad, b^2, bc, bd, c^2, cd, d^2]`. You can generate such polynomial
@@ -51,14 +56,16 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
     # TODO: You can wrap all the feature processing steps into one transformer
     # by using `sklearn.pipeline.Pipeline`. Although not strictly needed, it is
     # usually comfortable.
+    pipeline = sklearn.pipeline.Pipeline(steps=[('preprocessor', preprocessor), ('poly', poly)])
 
     # TODO: Fit the feature preprocessing steps (the composed pipeline with all of
     # them; or the individual steps, if you prefer) on the training data (using `fit`).
     # Then transform the training data into `train_data` (with a `transform` call;
     # however, you can combine the two methods into a single `fit_transform` call).
     # Finally, transform testing data to `test_data`.
-    train_data = ...
-    test_data = ...
+    
+    train_data = pipeline.fit_transform(train_data)
+    test_data = pipeline.fit_transform(test_data)
 
     return train_data[:5], test_data[:5]
 
