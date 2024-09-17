@@ -56,9 +56,15 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
         # We are training a model.
         np.random.seed(args.seed)
         train = Dataset()
-
+        print("Shape of train.data:", train.data.shape)
+        print("Shape of train.target:", train.target.shape)
+        if train.target.ndim==2:
+            train.target=train.target.ravel()
+            print("Train target reshaped to:", train.target.shape)
         # TODO: Train a model on the given dataset and store it in `model`.
-        model = ...
+        from sklearn.linear_model import LinearRegression
+        model = LinearRegression()
+        model.fit(train.data, train.target)
 
         # Serialize the model.
         with lzma.open(args.model_path, "wb") as model_file:
@@ -72,7 +78,7 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
             model = pickle.load(model_file)
 
         # TODO: Generate `predictions` with the test set predictions.
-        predictions = ...
+        predictions = model.predict(test.data)
 
         return predictions
 
