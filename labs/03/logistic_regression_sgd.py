@@ -29,10 +29,13 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, list[tuple[float, float]
 
     # TODO: Append a constant feature with value 1 to the end of every input data.
     # Then we do not need to explicitly represent bias - it becomes the last weight.
+    data = np.hstack([data, np.ones((data.shape[0], 1))])
 
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(data, target, test_size=args.test_size, random_state=args.seed)
+
 
     # Generate initial logistic regression weights.
     weights = generator.uniform(size=train_data.shape[1], low=-0.1, high=0.1)
@@ -43,12 +46,23 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, list[tuple[float, float]
         # TODO: Process the data in the order of `permutation`. For every
         # `args.batch_size` of them, average their gradient, and update the weights.
         # You can assume that `args.batch_size` exactly divides `train_data.shape[0]`.
+        for start in range(0, train_data.shape[0], args.batch_size):
+            batch_indices = permutation[start:start + args.batch_size]
+            batch_data = train_data[batch_indices]
+            batch_target = train_target[batch_indices]
+            predictions = 1 / (1 + np.exp(-np.dot(batch_data, weights)))
+            gradient = -np.dot(batch_data.T, batch_target - predictions) / args.batch_size
+            weights -= args.learning_rate * gradient
 
         # TODO: After the SGD epoch, measure the average loss and accuracy for both the
         # train set and the test set. The loss is the average MLE loss (i.e., the
         # negative log-likelihood, or cross-entropy loss, or KL loss) per example.
-        train_accuracy, train_loss, test_accuracy, test_loss = ...
-
+        train_predictions = 1 / (1 + np.exp(-np.dot(train_data, weights)))
+        train_loss = -np.mean(train_target * np.log(train_predictions + 1e-15) + (1 - train_target) * np.log(1 - train_predictions + 1e-15)) 
+        train_accuracy = np.mean((train_predictions >= 0.5) == train_target)
+        test_predictions = 1 / (1 + np.exp(-np.dot(test_data, weights)))
+        test_loss = -np.mean(test_target * np.log(test_predictions + 1e-15) + (1 - test_target) * np.log(1 - test_predictions + 1e-15))
+        test_accuracy = np.mean((test_predictions >= 0.5) == test_target)
         print("After epoch {}: train loss {:.4f} acc {:.1f}%, test loss {:.4f} acc {:.1f}%".format(
             epoch + 1, train_loss, 100 * train_accuracy, test_loss, 100 * test_accuracy))
 
