@@ -28,22 +28,24 @@ def main(args: argparse.Namespace) -> float:
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(dataset.data, dataset.target, test_size=args.test_size, random_state=args.seed)
 
     # TODO: Create a pipeline, which
     # 1. passes the inputs through `sklearn.preprocessing.MinMaxScaler()`,
     # 2. passes the result through `sklearn.preprocessing.PolynomialFeatures()`,
     # 3. passes the result through `sklearn.linear_model.LogisticRegression(random_state=args.seed)`.
-    #
-    # Then, using `sklearn.model_selection.StratifiedKFold(5)`, evaluate crossvalidated
+    pipeline = sklearn.pipeline.Pipeline([("scaler", sklearn.preprocessing.MinMaxScaler()),("poly", sklearn.preprocessing.PolynomialFeatures()),("logreg", sklearn.linear_model.LogisticRegression(random_state=args.seed)) ])  
     # train performance of all combinations of the following parameters:
     # - polynomial degree: 1, 2
     # - LogisticRegression regularization C: 0.01, 1, 100
     # - LogisticRegression solver: lbfgs, sag
-    #
+    param_grid = {"poly__degree": [1, 2], "logreg__C": [0.01, 1, 100],"logreg__solver": ["lbfgs", "sag"]}
     # For the best combination of parameters, compute the test set accuracy.
-    #
+    grid_search = sklearn.model_selection.GridSearchCV(estimator=pipeline,param_grid=param_grid,scoring="accuracy",cv=sklearn.model_selection.StratifiedKFold(5))
+    grid_search.fit(X_train, y_train)
     # The easiest way is to use `sklearn.model_selection.GridSearchCV`.
-    test_accuracy = ...
+    test_accuracy = grid_search.score(X_test, y_test)
+
 
     # If `model` is a fitted `GridSearchCV`, you can use the following code
     # to show the results of all the hyperparameter values evaluated:
