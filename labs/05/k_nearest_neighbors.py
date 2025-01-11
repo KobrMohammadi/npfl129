@@ -52,11 +52,30 @@ def main(args: argparse.Namespace) -> float:
         mnist.data, mnist.target, test_size=args.test_size, random_state=args.seed)
 
     # TODO: Generate `test_predictions` with classes predicted for `test_data`.
+    knn = NearestNeighbors(n_neighbors=args.k, metric='minkowski', p=args.p)
+    knn.fit(train_data)
+    distances, indices = knn.kneighbors(test_data)
     #
     # Find `args.k` nearest neighbors. Use the most frequent class (optionally weighted
     # by a given scheme described below) as prediction, choosing the one with the
     # smallest class number when there are multiple classes with the same frequency.
     #
+    if args.weights == "uniform":
+        weights = np.ones_like(distances)
+    elif args.weights == "inverse":
+        weights = 1 / distances
+    elif args.weights == "softmax":
+        weights = np.exp(-distances)
+
+    test_predictions = []
+    for i in range(len(test_target)):
+        weighted_votes = {}
+        for j, index in enumerate(indices[i]):
+            label = train_target[index]
+            weight = weights[i][j]
+            weighted_votes[label] = weighted_votes.get(label, 0) + weight
+        test_predictions.append(max(weighted_votes, key=weighted_votes.get))
+
     # Use L_p norm for a given p (either 1, 2 or 3) to measure distances.
     #
     # The weighting can be:
