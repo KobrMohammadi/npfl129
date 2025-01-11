@@ -41,6 +41,12 @@ def main(args: argparse.Namespace) -> tuple[tuple[np.ndarray, ...], list[float]]
         # TODO: Implement forward propagation, returning *both* the value of the hidden
         # layer and the value of the output layer.
         #
+        hidden = np.maximum(0, np.dot(inputs, weights[0]) + biases[0])
+        output = np.dot(hidden, weights[1]) + biases[1]
+        output -= np.max(output, axis=1, keepdims=True)
+        probabilities = np.exp(output) / np.sum(np.exp(output), axis=1, keepdims=True)
+        return hidden, probabilities
+        
         # We assume a neural network with a single hidden layer of size `args.hidden_layer`
         # and ReLU activation, where $ReLU(x) = max(x, 0)$, and an output layer with softmax
         # activation.
@@ -56,11 +62,40 @@ def main(args: argparse.Namespace) -> tuple[tuple[np.ndarray, ...], list[float]]
 
     for epoch in range(args.epochs):
         permutation = generator.permutation(train_data.shape[0])
-
         # TODO: Process the data in the order of `permutation`. For every
         # `args.batch_size` of them, average their gradient, and update the weights.
         # You can assume that `args.batch_size` exactly divides `train_data.shape[0]`.
         #
+        for start in range(0, train_data.shape[0], args.batch_size):
+            batch_data = train_data[start:start + args.batch_size]
+            batch_target = train_target[start:start + args.batch_size]
+
+            hidden, probabilities = forward(batch_data)
+            target_one_hot = np.zeros_like(probabilities)
+            target_one_hot[np.arange(batch_data.shape[0]), batch_target] = 1
+
+            output_error = probabilities - target_one_hot
+            grad_weights_1 = np.dot(hidden.T, output_error) / args.batch_size
+            grad_biases_1 = np.sum(output_error, axis=0) / args.batch_size
+
+            hidden_error = np.dot(output_error, weights[1].T) * (hidden > 0)  # Derivative of ReLU
+            grad_weights_0 = np.dot(batch_data.T, hidden_error) / args.batch_size
+            grad_biases_0 = np.sum(hidden_error, axis=0) / args.batch_size
+
+            weights[0] -= args.learning_rate * grad_weights_0
+            biases[0] -= args.learning_rate * grad_biases_0
+            weights[1] -= args.learning_rate * grad_weights_1
+            biases[1] -= args.learning_rate * grad_biases_1
+
+
+        hidden_train, probs_train = forward(train_data)
+        train_predictions = np.argmax(probs_train, axis=1)
+        train_accuracy = np.mean(train_predictions == train_target)
+
+        hidden_test, probs_test = forward(test_data)
+        test_predictions = np.argmax(probs_test, axis=1)
+        test_accuracy = np.mean(test_predictions == test_target)
+        
         # The gradient used in SGD has now four parts, gradient of `weights[0]` and `weights[1]`
         # and gradient of `biases[0]` and `biases[1]`.
         #
@@ -76,7 +111,7 @@ def main(args: argparse.Namespace) -> tuple[tuple[np.ndarray, ...], list[float]]
 
         # TODO: After the SGD epoch, measure the accuracy for both the
         # train test and the test set.
-        train_accuracy, test_accuracy = ...
+        #train_accuracy, test_accuracy = ...
 
         print("After epoch {}: train acc {:.1f}%, test acc {:.1f}%".format(
             epoch + 1, 100 * train_accuracy, 100 * test_accuracy))
