@@ -51,7 +51,8 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
         train = Dataset()
 
         # TODO: Train a model on the given dataset and store it in `model`.
-        model = ...
+        model = LogisticRegression(random_state=args.seed, max_iter=1000)
+        model.fit(train.data, train.target)
 
         # Serialize the model.
         with lzma.open(args.model_path, "wb") as model_file:
@@ -65,7 +66,7 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
             model = pickle.load(model_file)
 
         # TODO: Generate `predictions` with the test set predictions.
-        predictions = ...
+        predictions = model.predict(test.data)
 
         return predictions
 
