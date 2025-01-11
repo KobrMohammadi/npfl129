@@ -42,19 +42,45 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, list[tuple[float, float]
         permutation = generator.permutation(train_data.shape[0])
 
         # TODO: Process the data in the order of `permutation`. For every
+            train_data = train_data[permutation]
+            train_target = train_target[permutation]
         # `args.batch_size` of them, average their gradient, and update the weights.
         # You can assume that `args.batch_size` exactly divides `train_data.shape[0]`.
-        #
+        for start in range(0, train_data.shape[0], args.batch_size):
+            batch_data = train_data[start:start + args.batch_size]
+            batch_target = train_target[start:start + args.batch_size]
         # Note that you need to be careful when computing softmax because the exponentiation
         # in softmax can easily overflow. To avoid it, you should use the fact that
         # $softmax(z) = softmax(z + any_constant)$ and compute $softmax(z) = softmax(z - maximum_of_z)$.
         # That way we only exponentiate non-positive values, and overflow does not occur.
+        batch_data = train_data[start:start + args.batch_size]
+        batch_target = train_target[start:start + args.batch_size]
+        
+        logits = np.dot(batch_data, weights)
+        logits -= np.max(logits, axis=1, keepdims=True)
+        probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+        target_one_hot = np.zeros_like(probabilities)
+        target_one_hot[np.arange(batch_data.shape[0]), batch_target] = 1
 
+        gradient = np.dot(batch_data.T, (probabilities - target_one_hot)) / args.batch_size
+        weights -= args.learning_rate * gradient
         # TODO: After the SGD epoch, measure the average loss and accuracy for both the
         # train test and the test set. The loss is the average MLE loss (i.e., the
         # negative log-likelihood, or cross-entropy loss, or KL loss) per example.
-        train_accuracy, train_loss, test_accuracy, test_loss = ...
+        train_logits = np.dot(train_data, weights)
+        train_logits -= np.max(train_logits, axis=1, keepdims=True)
+        train_probabilities = np.exp(train_logits) / np.sum(np.exp(train_logits), axis=1, keepdims=True)
+        train_loss = -np.mean(np.log(train_probabilities[np.arange(train_data.shape[0]), train_target]))
+        train_predictions = np.argmax(train_probabilities, axis=1)
+        train_accuracy = np.mean(train_predictions == train_target)
 
+        test_logits = np.dot(test_data, weights)
+        test_logits -= np.max(test_logits, axis=1, keepdims=True)
+        test_probabilities = np.exp(test_logits) / np.sum(np.exp(test_logits), axis=1, keepdims=True)
+        test_loss = -np.mean(np.log(test_probabilities[np.arange(test_data.shape[0]), test_target]))
+        test_predictions = np.argmax(test_probabilities, axis=1)
+        test_accuracy = np.mean(test_predictions == test_target)
+        
         print("After epoch {}: train loss {:.4f} acc {:.1f}%, test loss {:.4f} acc {:.1f}%".format(
             epoch + 1, train_loss, 100 * train_accuracy, test_loss, 100 * test_accuracy))
 
